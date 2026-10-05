@@ -30,6 +30,9 @@
       </div>
 
       <div class="reader-shell">
+        <div class="audio-container" v-if="post.audio_url">
+          <AudioPlayer :src="post.audio_url" :title="post.title" />
+        </div>
         <aside class="toc" aria-label="Table of contents">
           <p>Contents</p>
           <a v-for="item in toc" :key="item.id" :href="`#${item.id}`" :class="`toc-level-${item.level}`">
@@ -73,6 +76,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import AudioPlayer from '../components/AudioPlayer.vue'
 import hljs from 'highlight.js/lib/core'
 import javascript from 'highlight.js/lib/languages/javascript'
 import typescript from 'highlight.js/lib/languages/typescript'
@@ -344,6 +348,14 @@ function formatDate(iso: string) {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.audio-container {
+  grid-column: 1 / -1;
+  max-width: 760px;
+  width: 100%;
+  margin: 0;
+  justify-self: end;
 }
 
 .reader-shell {

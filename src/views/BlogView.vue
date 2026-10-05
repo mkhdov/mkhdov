@@ -1,26 +1,18 @@
 <template>
   <main class="blog-page">
     <section class="blog-hero">
-      <div class="hero-copy">
-        <span class="section-kicker">Blog</span>
-        <h1>Notes from the build floor.</h1>
-        <p>
-          Practical engineering writeups, architecture notes, implementation details,
-          and lessons from building real products.
-        </p>
+      <div class="hero-background" aria-hidden="true">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="grid-overlay"></div>
       </div>
-
-      <div class="hero-illustration" aria-hidden="true">
-        <div class="paper paper-large">
-          <span></span>
-          <span></span>
-          <span></span>
-          <code>const idea = ship()</code>
-        </div>
-        <div class="paper paper-small">
-          <span></span>
-          <span></span>
-        </div>
+      <div class="hero-copy">
+        <span class="section-kicker">Insights & Stories</span>
+        <h1>Ideas worth <br> <span class="text-gradient">sharing.</span></h1>
+        <p>
+          Deep dives into engineering, design philosophy, and my journey through technology. 
+          A space for continuous learning and reflection.
+        </p>
       </div>
     </section>
 
@@ -135,104 +127,113 @@ function formatDate(iso: string) {
 }
 
 .blog-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 56px;
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 132px 40px 72px;
+  justify-content: center;
+  text-align: center;
+  min-height: 480px;
+  padding: 140px 40px 100px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.hero-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+  animation: float 14s ease-in-out infinite alternate;
+}
+
+.orb-1 {
+  width: 400px;
+  height: 400px;
+  background: rgba(108, 99, 255, 0.4);
+  top: -100px;
+  left: 20%;
+}
+
+.orb-2 {
+  width: 350px;
+  height: 350px;
+  background: rgba(14, 165, 233, 0.35);
+  bottom: -50px;
+  right: 15%;
+  animation-delay: -7s;
+}
+
+.grid-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(circle at center, black 40%, transparent 80%);
+  -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 80%);
 }
 
 .hero-copy {
-  max-width: 620px;
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .section-kicker {
   display: inline-flex;
   color: #6c63ff;
-  background: rgba(108, 99, 255, 0.08);
+  background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(108, 99, 255, 0.2);
   border-radius: 999px;
-  padding: 6px 14px;
-  font-size: 12px;
+  padding: 8px 18px;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  margin-bottom: 20px;
+  margin-bottom: 28px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(108, 99, 255, 0.1);
 }
 
 .blog-hero h1 {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(38px, 7vw, 76px);
-  line-height: 0.98;
-  letter-spacing: 0;
-  margin: 0 0 22px;
-  color: #111827;
+  font-size: clamp(46px, 8vw, 84px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin: 0 0 28px;
+  color: #0f172a;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #6c63ff, #0ea5e9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .blog-hero p {
-  max-width: 560px;
-  color: #64748b;
-  font-size: clamp(16px, 1.8vw, 19px);
-  line-height: 1.8;
+  max-width: 600px;
+  color: #475569;
+  font-size: clamp(17px, 2vw, 21px);
+  line-height: 1.7;
   margin: 0;
 }
 
-.hero-illustration {
-  position: relative;
-  min-height: 360px;
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(108, 99, 255, 0.1), rgba(14, 165, 233, 0.08)),
-    repeating-linear-gradient(90deg, transparent 0 26px, rgba(108, 99, 255, 0.08) 26px 27px);
-  border: 1px solid rgba(108, 99, 255, 0.12);
-  overflow: hidden;
-}
-
-.paper {
-  position: absolute;
-  background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 8px;
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.12);
-  padding: 28px;
-}
-
-.paper span {
-  display: block;
-  height: 12px;
-  border-radius: 999px;
-  background: #e2e8f0;
-  margin-bottom: 14px;
-}
-
-.paper span:nth-child(1) { width: 72%; background: #6c63ff; }
-.paper span:nth-child(2) { width: 92%; }
-.paper span:nth-child(3) { width: 64%; }
-
-.paper code {
-  display: block;
-  margin-top: 26px;
-  background: #0f172a;
-  color: #c4b5fd;
-  border-radius: 8px;
-  padding: 16px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 13px;
-}
-
-.paper-large {
-  width: 72%;
-  left: 12%;
-  top: 16%;
-}
-
-.paper-small {
-  width: 42%;
-  right: 8%;
-  bottom: 12%;
-  transform: rotate(4deg);
+@keyframes float {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(30px, 40px) scale(1.1); }
 }
 
 .blog-content {
@@ -472,12 +473,8 @@ function formatDate(iso: string) {
 
 @media (max-width: 900px) {
   .blog-hero {
-    grid-template-columns: 1fr;
-    padding: 108px 32px 54px;
-  }
-
-  .hero-illustration {
-    min-height: 280px;
+    min-height: 380px;
+    padding: 120px 32px 80px;
   }
 
   .featured-card {
@@ -496,8 +493,8 @@ function formatDate(iso: string) {
 
 @media (max-width: 640px) {
   .blog-hero {
-    padding: 92px 20px 40px;
-    gap: 34px;
+    min-height: 320px;
+    padding: 100px 20px 60px;
   }
 
   .blog-content {

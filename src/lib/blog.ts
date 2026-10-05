@@ -7,6 +7,7 @@ export interface BlogPost {
   excerpt: string | null
   content: string | null
   cover_image_url: string | null
+  audio_url: string | null
   author: string | null
   tags: string[] | null
   published: boolean
@@ -23,6 +24,7 @@ const extendedColumns = [
   'excerpt',
   'content',
   'cover_image_url',
+  'audio_url',
   'author',
   'tags',
   'published',
@@ -42,6 +44,7 @@ function normalizePost(post: RawPost): BlogPost {
     excerpt: typeof post.excerpt === 'string' ? post.excerpt : null,
     content: typeof post.content === 'string' ? post.content : null,
     cover_image_url: typeof post.cover_image_url === 'string' ? post.cover_image_url : null,
+    audio_url: typeof post.audio_url === 'string' ? post.audio_url : null,
     author: typeof post.author === 'string' ? post.author : 'Olimjon Makhmudov',
     tags: Array.isArray(post.tags) ? post.tags.filter((tag): tag is string => typeof tag === 'string') : [],
     published: Boolean(post.published),
