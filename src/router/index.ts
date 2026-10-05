@@ -33,6 +33,11 @@ const router = createRouter({
       component: BlogView,
     },
     {
+      path: '/blog/:slug',
+      name: 'blog-detail',
+      component: () => import('../views/BlogPostView.vue'),
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: NotFoundView,

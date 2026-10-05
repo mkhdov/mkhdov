@@ -10,6 +10,8 @@ watch(() => route.path, async (newPath) => {
   let pagePath = newPath
   if (newPath.startsWith('/articles/')) {
     pagePath = '/articles'
+  } else if (newPath.startsWith('/blog/')) {
+    pagePath = '/blog'
   }
 
   const allowedPaths = ['/', '/articles', '/projects', '/blog']

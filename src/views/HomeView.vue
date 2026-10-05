@@ -41,6 +41,13 @@
                 </svg>
                 Say Hi!
               </a>
+              <router-link to="/blog" class="btn-secondary" id="blog-hero-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/>
+                </svg>
+                Blog
+              </router-link>
             </div>
 
             <div class="orb orb-1" aria-hidden="true"></div>
@@ -251,6 +258,38 @@ onMounted(() => {
   color: #6c63ff;
   margin: 0 1px;
   animation: caretBlink 1.1s step-start infinite;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 12px;
+  border: 1.5px solid #6c63ff;
+  background: #ffffff;
+  color: #6c63ff;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 8px 22px rgba(108, 99, 255, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(108, 99, 255, 0.06);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(108, 99, 255, 0.18);
 }
 
 @keyframes caretBlink {
