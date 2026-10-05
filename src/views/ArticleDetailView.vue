@@ -33,6 +33,10 @@
 
         <!-- Content -->
         <div class="article-body prose" v-html="article.content"></div>
+
+        <!-- Reactions & Comments -->
+        <PostReactions :postId="article.id" postType="article" />
+        <PostComments :postId="article.id" postType="article" :postTitle="article.title" />
       </template>
     </div>
   </main>
@@ -42,6 +46,8 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import TopBar from '../components/TopBar.vue'
+import PostReactions from '../components/PostReactions.vue'
+import PostComments from '../components/PostComments.vue'
 import { supabase } from '../lib/supabase'
 
 interface Article {

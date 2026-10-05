@@ -40,7 +40,11 @@
           </a>
         </aside>
 
-        <article class="prose" v-html="processedHtml" @click="handleContentClick"></article>
+        <div class="article-main-col">
+          <article class="prose" v-html="processedHtml" @click="handleContentClick"></article>
+          <PostReactions :postId="post.id" postType="blog" />
+          <PostComments :postId="post.id" postType="blog" :postTitle="post.title" />
+        </div>
       </div>
 
       <section v-if="relatedPosts.length" class="related-section">
@@ -77,6 +81,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AudioPlayer from '../components/AudioPlayer.vue'
+import PostReactions from '../components/PostReactions.vue'
+import PostComments from '../components/PostComments.vue'
 import hljs from 'highlight.js/lib/core'
 import javascript from 'highlight.js/lib/languages/javascript'
 import typescript from 'highlight.js/lib/languages/typescript'
@@ -398,6 +404,10 @@ function formatDate(iso: string) {
 
 .toc-level-3 {
   padding-left: 14px;
+}
+
+.article-main-col {
+  min-width: 0;
 }
 
 .prose {

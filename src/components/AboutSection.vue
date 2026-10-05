@@ -43,7 +43,7 @@
         <div class="about-notes reveal-item">
           <div>
             <strong>Beyond code</strong>
-            <p>IELTS prep, SAT math, politics, self-development, and planning the next move in Tashkent.</p>
+            <p>IELTS prep, SAT math, politics, self-development.</p>
           </div>
           <div>
             <strong>Writing</strong>

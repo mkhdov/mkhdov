@@ -9,10 +9,10 @@
       <div class="hero-copy">
         <span class="section-kicker">Insights & Stories</span>
         <h1>Ideas worth <br> <span class="text-gradient">sharing.</span></h1>
-        <p>
+        <!-- <p>
           Deep dives into engineering, design philosophy, and my journey through technology. 
           A space for continuous learning and reflection.
-        </p>
+        </p> -->
       </div>
     </section>
 
@@ -133,7 +133,7 @@ function formatDate(iso: string) {
   justify-content: center;
   text-align: center;
   min-height: 480px;
-  padding: 140px 40px 100px;
+  padding: 140px 40px 130px;
   overflow: hidden;
   background: #ffffff;
 }
@@ -237,8 +237,10 @@ function formatDate(iso: string) {
 }
 
 .blog-content {
+  position: relative;
+  z-index: 2;
   max-width: 1180px;
-  margin: 0 auto;
+  margin: -72px auto 0;
   padding: 0 40px 100px;
 }
 
@@ -254,10 +256,15 @@ function formatDate(iso: string) {
   text-decoration: none;
   background: #ffffff;
   border: 1px solid rgba(108, 99, 255, 0.12);
-  border-radius: 8px;
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 14px 38px rgba(15, 23, 42, 0.07);
   transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.featured-card {
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.09), 0 1px 4px rgba(108, 99, 255, 0.12);
 }
 
 .featured-card:hover,
@@ -473,8 +480,8 @@ function formatDate(iso: string) {
 
 @media (max-width: 900px) {
   .blog-hero {
-    min-height: 380px;
-    padding: 120px 32px 80px;
+    min-height: 400px;
+    padding: 120px 32px 105px;
   }
 
   .featured-card {
@@ -487,17 +494,19 @@ function formatDate(iso: string) {
   }
 
   .blog-content {
+    margin: -50px auto 0;
     padding: 0 32px 80px;
   }
 }
 
 @media (max-width: 640px) {
   .blog-hero {
-    min-height: 320px;
-    padding: 100px 20px 60px;
+    min-height: 330px;
+    padding: 100px 20px 80px;
   }
 
   .blog-content {
+    margin: -36px auto 0;
     padding: 0 20px 64px;
   }
 
