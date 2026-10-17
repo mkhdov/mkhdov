@@ -86,21 +86,17 @@
             <div class="post-text prose-content" v-html="renderedContent"></div>
           </div>
 
-          <!-- Attached Image -->
-          <div
-            v-if="post.cover_image_url"
-            class="post-media-attachment"
-            @click="lightboxOpen = true"
-          >
-            <img :src="post.cover_image_url" :alt="post.title" class="attachment-img" />
-            <span class="media-zoom-hint">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                <line x1="11" y1="8" x2="11" y2="14"/>
-                <line x1="8" y1="11" x2="14" y2="11"/>
-              </svg>
-            </span>
+          <!-- Attached Image(s) (Instagram Carousel / Single Photo) -->
+          <ImageCarousel
+            v-if="post.image_urls && post.image_urls.length"
+            :images="post.image_urls"
+            :alt="post.title"
+            @open-lightbox="(idx) => openCarouselLightbox(post.image_urls, idx, post.title)"
+          />
+
+          <!-- Attached Video Player -->
+          <div v-if="post.video_url" class="post-video-attachment">
+            <VideoPlayer :src="post.video_url" :title="post.title" />
           </div>
 
           <!-- Attached Audio / Voice Note -->
@@ -153,25 +149,62 @@
       </div>
     </transition>
 
-    <!-- Image Lightbox Modal -->
+    <!-- Image Lightbox Modal (Supports Carousel Navigation) -->
     <transition name="fade">
       <div
-        v-if="lightboxOpen && post?.cover_image_url"
+        v-if="currentLightboxImage"
         class="lightbox-overlay"
-        @click="lightboxOpen = false"
+        @click="closeLightbox"
       >
-        <button type="button" class="lightbox-close" aria-label="Close image">✕</button>
-        <img :src="post.cover_image_url" :alt="post.title" class="lightbox-image" @click.stop />
+        <button type="button" class="lightbox-close" aria-label="Close image" @click="closeLightbox">✕</button>
+
+        <div v-if="lightboxImages.length > 1" class="lightbox-counter-badge">
+          {{ lightboxIndex + 1 }} / {{ lightboxImages.length }}
+        </div>
+
+        <button
+          v-if="lightboxImages.length > 1 && lightboxIndex > 0"
+          type="button"
+          class="lightbox-nav-btn lightbox-prev"
+          aria-label="Previous image"
+          @click.stop="prevLightboxImage"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+
+        <img
+          :key="currentLightboxImage"
+          :src="currentLightboxImage"
+          :alt="lightboxAlt"
+          class="lightbox-image"
+          @click.stop
+        />
+
+        <button
+          v-if="lightboxImages.length > 1 && lightboxIndex < lightboxImages.length - 1"
+          type="button"
+          class="lightbox-nav-btn lightbox-next"
+          aria-label="Next image"
+          @click.stop="nextLightboxImage"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
       </div>
     </transition>
   </main>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import TopBar from '../components/TopBar.vue'
 import AudioPlayer from '../components/AudioPlayer.vue'
+import VideoPlayer from '../components/VideoPlayer.vue'
+import ImageCarousel from '../components/ImageCarousel.vue'
 import PostReactions from '../components/PostReactions.vue'
 import PostComments from '../components/PostComments.vue'
 import {
@@ -186,14 +219,28 @@ const route = useRoute()
 const post = ref<BlogPost | null>(null)
 const loading = ref(true)
 const toastMessage = ref('')
-const lightboxOpen = ref(false)
+const lightboxImages = ref<string[]>([])
+const lightboxIndex = ref(0)
+const lightboxAlt = ref('')
+
+const currentLightboxImage = computed(() => {
+  return lightboxImages.value[lightboxIndex.value] || null
+})
 
 const slugOrId = computed(() => {
   const param = route.params.slug
   return Array.isArray(param) ? param[0] : param
 })
 
-onMounted(loadPost)
+onMounted(() => {
+  window.addEventListener('keydown', handleLightboxKeydown)
+  loadPost()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleLightboxKeydown)
+})
+
 watch(slugOrId, loadPost)
 
 async function loadPost() {
@@ -201,6 +248,40 @@ async function loadPost() {
   loading.value = true
   post.value = await fetchPublishedPost(slugOrId.value)
   loading.value = false
+}
+
+function openCarouselLightbox(images: string[], index = 0, alt?: string) {
+  lightboxImages.value = images
+  lightboxIndex.value = index
+  lightboxAlt.value = alt || 'Attached media'
+}
+
+function closeLightbox() {
+  lightboxImages.value = []
+  lightboxIndex.value = 0
+}
+
+function prevLightboxImage() {
+  if (lightboxIndex.value > 0) {
+    lightboxIndex.value--
+  }
+}
+
+function nextLightboxImage() {
+  if (lightboxIndex.value < lightboxImages.value.length - 1) {
+    lightboxIndex.value++
+  }
+}
+
+function handleLightboxKeydown(e: KeyboardEvent) {
+  if (!lightboxImages.value.length) return
+  if (e.key === 'Escape') {
+    closeLightbox()
+  } else if (e.key === 'ArrowLeft') {
+    prevLightboxImage()
+  } else if (e.key === 'ArrowRight') {
+    nextLightboxImage()
+  }
 }
 
 function shouldShowHeadline(item: BlogPost): boolean {

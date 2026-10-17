@@ -3,34 +3,15 @@
     <TopBar />
 
     <div class="feed-container">
-      <!-- Channel / Profile Card (Social Header) -->
-      <section class="channel-card">
-
-        <!-- Search & Filter Controls -->
-        <div class="channel-filter-bar">
-          <div class="search-input-wrap">
-            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Search posts or topics..."
-              class="feed-search-input"
-            />
-            <button
-              v-if="searchQuery"
-              type="button"
-              class="search-clear-btn"
-              @click="searchQuery = ''"
-              aria-label="Clear search"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div v-if="allTags.length" class="tag-chips-scroll">
+      <!-- Blog Filter & Search Section (Compressed & Dropdown) -->
+      <section
+        ref="filterSectionRef"
+        class="blog-filter-section"
+        :class="{ 'is-search-active': isSearchOpen || searchQuery.trim().length > 0 }"
+      >
+        <div class="filter-bar-row">
+          <!-- Tag chips (horizontal scroll) -->
+          <div class="tag-chips-scroll">
             <button
               type="button"
               class="tag-chip"
@@ -50,7 +31,78 @@
               #{{ tag }}
             </button>
           </div>
+
+          <!-- Search Trigger Button -->
+          <button
+            type="button"
+            class="search-trigger-btn"
+            :class="{ 'is-active': isSearchOpen, 'has-query': searchQuery.trim().length > 0 }"
+            @click="toggleSearch"
+            :aria-expanded="isSearchOpen"
+            aria-label="Toggle search"
+            :title="isSearchOpen ? 'Close search' : 'Search posts'"
+          >
+            <svg class="search-trigger-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <span class="search-trigger-text">Search</span>
+            <span v-if="searchQuery.trim()" class="search-indicator-dot" title="Filter active"></span>
+          </button>
         </div>
+
+        <!-- Search Dropdown Panel (Opens when search button is pressed) -->
+        <transition name="search-dropdown">
+          <div v-if="isSearchOpen" class="search-dropdown-container">
+            <div class="search-input-wrapper">
+              <div class="search-input-box">
+                <svg class="search-dropdown-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input
+                  ref="searchInputRef"
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Search posts by keyword, title, tag..."
+                  class="feed-search-input"
+                  @keydown.enter.prevent
+                  @keydown.esc="closeSearch"
+                />
+                <button
+                  v-if="searchQuery"
+                  type="button"
+                  class="search-clear-btn"
+                  @click="clearSearch"
+                  aria-label="Clear search"
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <button
+                type="button"
+                class="search-dismiss-btn"
+                @click="closeSearch"
+                aria-label="Close search"
+                title="Close search"
+              >
+                Close
+              </button>
+            </div>
+
+            <!-- Query feedback when searching -->
+            <div v-if="searchQuery.trim()" class="search-results-info">
+              <span>
+                {{ filteredPosts.length }} {{ filteredPosts.length === 1 ? 'post' : 'posts' }} found
+              </span>
+              <button type="button" class="search-info-clear" @click="clearSearch">
+                Clear
+              </button>
+            </div>
+          </div>
+        </transition>
       </section>
 
       <!-- Toast Feedback -->
@@ -172,26 +224,17 @@
             </button>
           </div>
 
-          <!-- Media Attachment: Image -->
-          <div
-            v-if="post.cover_image_url"
-            class="post-media-attachment"
-            @click="openLightbox(post.cover_image_url, post.title)"
-          >
-            <img
-              :src="post.cover_image_url"
-              :alt="post.title"
-              loading="lazy"
-              class="attachment-img"
-            />
-            <span class="media-zoom-hint">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                <line x1="11" y1="8" x2="11" y2="14"/>
-                <line x1="8" y1="11" x2="14" y2="11"/>
-              </svg>
-            </span>
+          <!-- Media Attachment: Image Carousel / Single Photo -->
+          <ImageCarousel
+            v-if="post.image_urls && post.image_urls.length"
+            :images="post.image_urls"
+            :alt="post.title"
+            @open-lightbox="(idx) => openCarouselLightbox(post.image_urls, idx, post.title)"
+          />
+
+          <!-- Media Attachment: Video Player -->
+          <div v-if="post.video_url" class="post-video-attachment">
+            <VideoPlayer :src="post.video_url" :title="post.title" />
           </div>
 
           <!-- Audio / Voice Note Attachment (Telegram-style) -->
@@ -289,20 +332,61 @@
       </div>
     </div>
 
-    <!-- Image Lightbox Modal -->
+    <!-- Image Lightbox Modal (Supports Carousel Navigation) -->
     <transition name="fade">
-      <div v-if="lightboxImg" class="lightbox-overlay" @click="lightboxImg = null">
-        <button type="button" class="lightbox-close" aria-label="Close image">✕</button>
-        <img :src="lightboxImg" :alt="lightboxAlt" class="lightbox-image" @click.stop />
+      <div
+        v-if="currentLightboxImage"
+        class="lightbox-overlay"
+        @click="closeLightbox"
+      >
+        <button type="button" class="lightbox-close" aria-label="Close image" @click="closeLightbox">✕</button>
+
+        <div v-if="lightboxImages.length > 1" class="lightbox-counter-badge">
+          {{ lightboxIndex + 1 }} / {{ lightboxImages.length }}
+        </div>
+
+        <button
+          v-if="lightboxImages.length > 1 && lightboxIndex > 0"
+          type="button"
+          class="lightbox-nav-btn lightbox-prev"
+          aria-label="Previous image"
+          @click.stop="prevLightboxImage"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+
+        <img
+          :key="currentLightboxImage"
+          :src="currentLightboxImage"
+          :alt="lightboxAlt"
+          class="lightbox-image"
+          @click.stop
+        />
+
+        <button
+          v-if="lightboxImages.length > 1 && lightboxIndex < lightboxImages.length - 1"
+          type="button"
+          class="lightbox-nav-btn lightbox-next"
+          aria-label="Next image"
+          @click.stop="nextLightboxImage"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
       </div>
     </transition>
   </main>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import TopBar from '../components/TopBar.vue'
 import AudioPlayer from '../components/AudioPlayer.vue'
+import VideoPlayer from '../components/VideoPlayer.vue'
+import ImageCarousel from '../components/ImageCarousel.vue'
 import PostReactions from '../components/PostReactions.vue'
 import PostComments from '../components/PostComments.vue'
 import {
@@ -318,14 +402,54 @@ const posts = ref<BlogPost[]>([])
 const loading = ref(true)
 const searchQuery = ref('')
 const selectedTag = ref<string | null>(null)
+const isSearchOpen = ref(false)
+const filterSectionRef = ref<HTMLElement | null>(null)
+const searchInputRef = ref<HTMLInputElement | null>(null)
 const expandedPosts = ref<Record<string, boolean>>({})
 const openCommentsPostId = ref<string | null>(null)
 const commentCounts = ref<Record<string, number>>({})
 const toastMessage = ref('')
-const lightboxImg = ref<string | null>(null)
+const lightboxImages = ref<string[]>([])
+const lightboxIndex = ref(0)
 const lightboxAlt = ref('')
 
+const currentLightboxImage = computed(() => {
+  return lightboxImages.value[lightboxIndex.value] || null
+})
+
+function toggleSearch() {
+  isSearchOpen.value = !isSearchOpen.value
+  if (isSearchOpen.value) {
+    nextTick(() => {
+      searchInputRef.value?.focus()
+    })
+  }
+}
+
+function closeSearch() {
+  isSearchOpen.value = false
+}
+
+function clearSearch() {
+  searchQuery.value = ''
+  nextTick(() => {
+    searchInputRef.value?.focus()
+  })
+}
+
+function handleClickOutside(event: MouseEvent) {
+  if (
+    isSearchOpen.value &&
+    filterSectionRef.value &&
+    !filterSectionRef.value.contains(event.target as Node)
+  ) {
+    isSearchOpen.value = false
+  }
+}
+
 onMounted(async () => {
+  document.addEventListener('click', handleClickOutside)
+  window.addEventListener('keydown', handleLightboxKeydown)
   posts.value = await fetchPublishedPosts()
   loading.value = false
 
@@ -333,6 +457,11 @@ onMounted(async () => {
     const ids = posts.value.map((p) => p.id)
     commentCounts.value = await fetchCommentCounts(ids)
   }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('keydown', handleLightboxKeydown)
 })
 
 // Extract all unique tags
@@ -369,6 +498,7 @@ const filteredPosts = computed(() => {
 function resetFilters() {
   searchQuery.value = ''
   selectedTag.value = null
+  isSearchOpen.value = false
 }
 
 function postUrl(post: BlogPost) {
@@ -474,9 +604,42 @@ async function sharePost(post: BlogPost) {
   await copyPostLink(post)
 }
 
-function openLightbox(url: string, alt?: string) {
-  lightboxImg.value = url
+function openCarouselLightbox(images: string[], index = 0, alt?: string) {
+  lightboxImages.value = images
+  lightboxIndex.value = index
   lightboxAlt.value = alt || 'Attached media'
+}
+
+function openLightbox(url: string, alt?: string) {
+  openCarouselLightbox([url], 0, alt)
+}
+
+function closeLightbox() {
+  lightboxImages.value = []
+  lightboxIndex.value = 0
+}
+
+function prevLightboxImage() {
+  if (lightboxIndex.value > 0) {
+    lightboxIndex.value--
+  }
+}
+
+function nextLightboxImage() {
+  if (lightboxIndex.value < lightboxImages.value.length - 1) {
+    lightboxIndex.value++
+  }
+}
+
+function handleLightboxKeydown(e: KeyboardEvent) {
+  if (!lightboxImages.value.length) return
+  if (e.key === 'Escape') {
+    closeLightbox()
+  } else if (e.key === 'ArrowLeft') {
+    prevLightboxImage()
+  } else if (e.key === 'ArrowRight') {
+    nextLightboxImage()
+  }
 }
 </script>
 
@@ -500,116 +663,165 @@ function openLightbox(url: string, alt?: string) {
   gap: 20px;
 }
 
-/* ── Channel Header Card ────────────────────────────────── */
-.channel-card {
+/* ── Compressed Blog Filter & Search Section ───────────── */
+.blog-filter-section {
   background: #ffffff;
   border: 1px solid rgba(108, 99, 255, 0.15);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 4px 20px rgba(108, 99, 255, 0.05);
+  border-radius: 16px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 10px rgba(108, 99, 255, 0.04);
+  transition: all 0.2s ease;
+  position: relative;
 }
 
-.channel-top {
+.blog-filter-section:hover,
+.blog-filter-section.is-search-active {
+  border-color: rgba(108, 99, 255, 0.28);
+  box-shadow: 0 4px 18px rgba(108, 99, 255, 0.08);
+}
+
+.filter-bar-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 14px;
+  justify-content: space-between;
+  gap: 10px;
 }
 
-.avatar-wrap {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.channel-avatar {
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #6c63ff;
-  box-shadow: 0 2px 8px rgba(108, 99, 255, 0.2);
-}
-
-.online-indicator {
-  position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  background: #10b981;
-  border: 2px solid #ffffff;
-}
-
-.channel-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.channel-name-row {
+/* Tag Chips Horizontal Scroll */
+.tag-chips-scroll {
   display: flex;
   align-items: center;
   gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  flex: 1;
+  min-width: 0;
 }
 
-.channel-name {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0;
-  line-height: 1.2;
+.tag-chips-scroll::-webkit-scrollbar {
+  display: none;
 }
 
-.verified-badge {
+.tag-chip {
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.tag-chip:hover {
+  border-color: #6c63ff;
   color: #6c63ff;
+  background: #ffffff;
+}
+
+.tag-chip.is-active {
+  background: #6c63ff;
+  border-color: #6c63ff;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(108, 99, 255, 0.25);
+}
+
+/* Search Trigger Button */
+.search-trigger-btn {
   display: inline-flex;
   align-items: center;
-}
-
-.channel-handle {
-  font-size: 0.88rem;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
   color: #64748b;
-  margin: 0;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
-.channel-bio {
-  font-size: 0.95rem;
-  color: #334155;
-  line-height: 1.5;
-  margin: 0 0 18px;
+.search-trigger-btn:hover {
+  background: #ffffff;
+  border-color: #6c63ff;
+  color: #6c63ff;
 }
 
-/* ── Filter Bar ─────────────────────────────────────────── */
-.channel-filter-bar {
+.search-trigger-btn.is-active {
+  background: rgba(108, 99, 255, 0.1);
+  border-color: #6c63ff;
+  color: #6c63ff;
+}
+
+.search-trigger-btn.has-query {
+  border-color: #6c63ff;
+  color: #6c63ff;
+  font-weight: 700;
+}
+
+.search-indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6c63ff;
+  box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.25);
+  display: inline-block;
+}
+
+/* Search Dropdown Panel (Opens on button press) */
+.search-dropdown-container {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  border-top: 1px solid #f1f5f9;
-  padding-top: 16px;
+  gap: 6px;
 }
 
-.search-input-wrap {
+.search-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-input-box {
   position: relative;
   display: flex;
   align-items: center;
+  flex: 1;
 }
 
-.search-icon {
+.search-dropdown-icon {
   position: absolute;
-  left: 14px;
+  left: 12px;
   color: #94a3b8;
   pointer-events: none;
+  transition: color 0.18s ease;
+}
+
+.search-input-box:focus-within .search-dropdown-icon {
+  color: #6c63ff;
 }
 
 .feed-search-input {
   width: 100%;
-  padding: 10px 36px 10px 40px;
+  height: 38px;
+  padding: 0 34px 0 36px;
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #f8fafc;
   color: #0f172a;
   outline: none;
@@ -622,46 +834,98 @@ function openLightbox(url: string, alt?: string) {
   box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.12);
 }
 
+.feed-search-input::placeholder {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
 .search-clear-btn {
   position: absolute;
-  right: 12px;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 11px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.search-clear-btn:hover {
+  background: #cbd5e1;
+  color: #0f172a;
+}
+
+.search-dismiss-btn {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-dismiss-btn:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.search-results-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: #64748b;
+  padding: 2px 4px 0;
+}
+
+.search-info-clear {
   background: transparent;
   border: none;
-  color: #94a3b8;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.tag-chips-scroll {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  scrollbar-width: thin;
-}
-
-.tag-chip {
-  padding: 5px 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  border-radius: 999px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #64748b;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.18s ease;
-}
-
-.tag-chip:hover {
-  border-color: #6c63ff;
   color: #6c63ff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-.tag-chip.is-active {
-  background: #6c63ff;
-  border-color: #6c63ff;
-  color: #ffffff;
+.search-info-clear:hover {
+  color: #5548e0;
+}
+
+/* Dropdown Animation */
+.search-dropdown-enter-active,
+.search-dropdown-leave-active {
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: 120px;
+  opacity: 1;
+  overflow: hidden;
+}
+
+.search-dropdown-enter-from,
+.search-dropdown-leave-to {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+  padding-top: 0;
+  transform: translateY(-4px);
 }
 
 /* ── Feed Stream ────────────────────────────────────────── */
@@ -868,6 +1132,11 @@ function openLightbox(url: string, alt?: string) {
   display: grid;
   place-items: center;
   backdrop-filter: blur(4px);
+}
+
+/* ── Video Attachment ───────────────────────────────────── */
+.post-video-attachment {
+  margin-bottom: 14px;
 }
 
 /* ── Audio Attachment ───────────────────────────────────── */
@@ -1131,6 +1400,60 @@ function openLightbox(url: string, alt?: string) {
   border-radius: 50%;
   font-size: 1.2rem;
   cursor: pointer;
+  z-index: 1060;
+  transition: background 0.18s ease;
+}
+
+.lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.lightbox-counter-badge {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.75);
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 1060;
+}
+
+.lightbox-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.7);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 1060;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.lightbox-nav-btn:hover {
+  background: #6c63ff;
+  border-color: #6c63ff;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.lightbox-prev {
+  left: 20px;
+}
+
+.lightbox-next {
+  right: 20px;
 }
 
 .lightbox-image {
@@ -1165,8 +1488,27 @@ function openLightbox(url: string, alt?: string) {
   .feed-container {
     padding: 80px 12px 30px;
   }
-  .channel-card {
-    padding: 18px;
+  .blog-filter-section {
+    padding: 6px 10px;
+    border-radius: 14px;
+  }
+  .search-trigger-btn {
+    padding: 0 10px;
+    height: 30px;
+    font-size: 0.78rem;
+  }
+  .tag-chip {
+    padding: 4px 10px;
+    font-size: 0.76rem;
+  }
+  .feed-search-input {
+    height: 36px;
+    font-size: 0.84rem;
+  }
+  .search-dismiss-btn {
+    height: 36px;
+    padding: 0 10px;
+    font-size: 0.78rem;
   }
   .social-post-card {
     padding: 16px;
