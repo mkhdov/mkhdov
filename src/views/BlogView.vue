@@ -610,10 +610,6 @@ function openCarouselLightbox(images: string[], index = 0, alt?: string) {
   lightboxAlt.value = alt || 'Attached media'
 }
 
-function openLightbox(url: string, alt?: string) {
-  openCarouselLightbox([url], 0, alt)
-}
-
 function closeLightbox() {
   lightboxImages.value = []
   lightboxIndex.value = 0

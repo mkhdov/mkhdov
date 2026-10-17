@@ -91,7 +91,7 @@
             v-if="post.image_urls && post.image_urls.length"
             :images="post.image_urls"
             :alt="post.title"
-            @open-lightbox="(idx) => openCarouselLightbox(post.image_urls, idx, post.title)"
+            @open-lightbox="handleCarouselLightbox"
           />
 
           <!-- Attached Video Player -->
@@ -254,6 +254,12 @@ function openCarouselLightbox(images: string[], index = 0, alt?: string) {
   lightboxImages.value = images
   lightboxIndex.value = index
   lightboxAlt.value = alt || 'Attached media'
+}
+
+function handleCarouselLightbox(index: number) {
+  const current = post.value
+  if (!current?.image_urls?.length) return
+  openCarouselLightbox(current.image_urls, index, current.title)
 }
 
 function closeLightbox() {
