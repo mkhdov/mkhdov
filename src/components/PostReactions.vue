@@ -1,11 +1,11 @@
 <template>
-  <div class="reactions-container">
-    <div class="reactions-header">
+  <div class="reactions-container" :class="{ 'is-compact': compact }">
+    <div v-if="!compact" class="reactions-header">
       <span class="reactions-title">Reactions</span>
       <span class="reactions-total" v-if="totalReactions > 0">{{ totalReactions }} total</span>
     </div>
 
-    <div class="reactions-list">
+    <div class="reactions-list" :class="{ 'is-compact': compact }">
       <button
         v-for="item in REACTION_TYPES"
         :key="item.type"
@@ -13,7 +13,8 @@
         class="reaction-btn"
         :class="{
           'is-active': userReactions.has(item.type),
-          'is-animating': animatingType === item.type
+          'is-animating': animatingType === item.type,
+          'is-compact': compact
         }"
         :title="item.label"
         @click="toggleReaction(item.type)"
@@ -31,10 +32,16 @@ import { supabase } from '../lib/supabase'
 
 export type ReactionType = 'like' | 'love' | 'clap' | 'fire' | 'insightful'
 
-const props = defineProps<{
-  postId: string
-  postType: 'blog' | 'article'
-}>()
+const props = withDefaults(
+  defineProps<{
+    postId: string
+    postType: 'blog' | 'article'
+    compact?: boolean
+  }>(),
+  {
+    compact: false,
+  }
+)
 
 const REACTION_TYPES: { type: ReactionType; emoji: string; label: string }[] = [
   { type: 'like', emoji: '👍', label: 'Thumbs Up' },
@@ -221,6 +228,39 @@ onUnmounted(() => {
   border: 1px solid rgba(108, 99, 255, 0.14);
   border-radius: 16px;
   margin: 48px 0 32px;
+}
+
+.reactions-container.is-compact {
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  gap: 6px;
+}
+
+.reactions-list.is-compact {
+  gap: 6px;
+}
+
+.reaction-btn.is-compact {
+  padding: 5px 11px;
+  font-size: 12.5px;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  box-shadow: none;
+}
+
+.reaction-btn.is-compact:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.reaction-btn.is-compact.is-active {
+  background: rgba(108, 99, 255, 0.1);
+  border-color: #6c63ff;
+  color: #6c63ff;
 }
 
 .reactions-header {

@@ -13,7 +13,7 @@
 
       <div class="progress-container">
         <div class="track-info">
-          <span class="title">Listen to this article</span>
+          <span class="title">{{ title || 'Voice / Audio Note' }}</span>
           <span class="time">{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
         </div>
         <input 
@@ -107,7 +107,7 @@ async function shareAudio() {
 
 <style scoped>
 .audio-player-wrapper {
-  margin: 32px 0;
+  margin: 14px 0;
   width: 100%;
 }
 

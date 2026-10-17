@@ -110,3 +110,57 @@ export async function fetchPublishedPost(slugOrId: string) {
   const posts = await fetchPublishedPosts()
   return posts.find((post) => post.slug === slugOrId || post.id === slugOrId) ?? null
 }
+
+export function timeAgo(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const date = new Date(iso)
+  if (isNaN(date.getTime())) return ''
+  const now = new Date()
+  const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+  if (diffSec < 60) return 'Just now'
+  const diffMin = Math.floor(diffSec / 60)
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffHours = Math.floor(diffMin / 60)
+  if (diffHours < 24) return `${diffHours}h ago`
+  const diffDays = Math.floor(diffHours / 24)
+  if (diffDays < 7) return `${diffDays}d ago`
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+  })
+}
+
+export function formatFullDate(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const date = new Date(iso)
+  if (isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+export async function fetchCommentCounts(postIds: string[]): Promise<Record<string, number>> {
+  if (!postIds.length) return {}
+  const { data, error } = await supabase
+    .from('post_comments')
+    .select('post_id')
+    .eq('post_type', 'blog')
+    .eq('status', 'approved')
+    .in('post_id', postIds)
+
+  if (error || !data) return {}
+  const counts: Record<string, number> = {}
+  for (const row of data as { post_id: string }[]) {
+    counts[row.post_id] = (counts[row.post_id] || 0) + 1
+  }
+  return counts
+}
+

@@ -1,645 +1,736 @@
 <template>
-  <main class="blog-post-page">
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-    </div>
+  <main class="focused-post-page">
+    <TopBar />
 
-    <div v-else-if="!post" class="empty-state">
-      <h1>Post not found</h1>
-      <router-link to="/blog" class="back-link">Back to blog</router-link>
-    </div>
-
-    <template v-else>
-      <section class="post-hero">
-        <router-link to="/blog" class="back-link">Back to blog</router-link>
-        <div class="hero-meta">
-          <span>{{ post.author || 'Olimjon Makhmudov' }}</span>
-          <span>Published {{ formatDate(displayDate(post)) }}</span>
-          <span>Updated {{ formatDate(updatedDate(post)) }}</span>
-          <span>{{ readingMinutes(post) }} min read</span>
-        </div>
-        <h1>{{ post.title }}</h1>
-        <p v-if="postExcerpt(post)" class="post-excerpt">{{ postExcerpt(post, 220) }}</p>
-        <div v-if="post.tags?.length" class="tag-row">
-          <span v-for="tag in post.tags" :key="tag">{{ tag }}</span>
-        </div>
-      </section>
-
-      <div v-if="post.cover_image_url" class="cover-wrap">
-        <img :src="post.cover_image_url" :alt="post.title" />
-      </div>
-
-      <div class="reader-shell">
-        <div class="audio-container" v-if="post.audio_url">
-          <AudioPlayer :src="post.audio_url" :title="post.title" />
-        </div>
-        <aside class="toc" aria-label="Table of contents">
-          <p>Contents</p>
-          <a v-for="item in toc" :key="item.id" :href="`#${item.id}`" :class="`toc-level-${item.level}`">
-            {{ item.text }}
-          </a>
-        </aside>
-
-        <div class="article-main-col">
-          <article class="prose" v-html="processedHtml" @click="handleContentClick"></article>
-          <PostReactions :postId="post.id" postType="blog" />
-          <PostComments :postId="post.id" postType="blog" :postTitle="post.title" />
-        </div>
-      </div>
-
-      <section v-if="relatedPosts.length" class="related-section">
-        <div class="section-head">
-          <span>Keep reading</span>
-          <h2>Related posts</h2>
-        </div>
-        <div class="related-grid">
-          <router-link v-for="item in relatedPosts" :key="item.id" :to="postUrl(item)" class="related-card">
-            <span>{{ item.tags?.[0] || 'Blog' }}</span>
-            <h3>{{ item.title }}</h3>
-            <p>{{ postExcerpt(item, 110) }}</p>
-          </router-link>
-        </div>
-      </section>
-
-      <nav class="post-nav" aria-label="Article navigation">
-        <router-link v-if="nextPost" :to="postUrl(nextPost)" class="nav-card">
-          <span>Previous</span>
-          <strong>{{ nextPost.title }}</strong>
-        </router-link>
-        <span v-else></span>
-
-        <router-link v-if="previousPost" :to="postUrl(previousPost)" class="nav-card align-right">
-          <span>Next</span>
-          <strong>{{ previousPost.title }}</strong>
+    <div class="focused-container">
+      <!-- Back to Feed Nav -->
+      <nav class="back-nav" aria-label="Breadcrumb">
+        <router-link to="/blog" class="back-feed-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          <span>Back to Feed</span>
         </router-link>
       </nav>
-    </template>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="skeleton-focused-card">
+        <div class="skeleton-header">
+          <div class="skeleton-avatar"></div>
+          <div class="skeleton-user-info">
+            <div class="skeleton-line w40"></div>
+            <div class="skeleton-line w25"></div>
+          </div>
+        </div>
+        <div class="skeleton-content">
+          <div class="skeleton-line w90"></div>
+          <div class="skeleton-line w80"></div>
+          <div class="skeleton-line w60"></div>
+        </div>
+        <div class="skeleton-media"></div>
+      </div>
+
+      <!-- Not Found State -->
+      <div v-else-if="!post" class="empty-focused-card">
+        <div class="empty-icon">🔍</div>
+        <h2>Post not found</h2>
+        <p>This post may have been removed or the link might be incorrect.</p>
+        <router-link to="/blog" class="return-feed-btn">Return to Feed</router-link>
+      </div>
+
+      <!-- Focused Post Card -->
+      <template v-else>
+        <article class="focused-post-card">
+          <!-- Post Author Header -->
+          <header class="post-header">
+            <div class="post-header-left">
+              <img src="/portrait.png" alt="Olimjon Makhmudov" class="post-author-avatar" />
+              <div class="post-author-meta">
+                <div class="author-name-line">
+                  <span class="author-name">{{ post.author || 'Olimjon Makhmudov' }}</span>
+                  <span class="verified-icon" title="Verified Creator">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.2 14.2l-3.5-3.5 1.41-1.41 2.09 2.09 5.69-5.69 1.41 1.41-7.1 7.1z"/>
+                    </svg>
+                  </span>
+                  <span class="author-handle">@mkhdov</span>
+                </div>
+                <time class="post-timestamp" :datetime="displayDate(post)">
+                  {{ formatFullDate(displayDate(post)) }} ({{ timeAgo(displayDate(post)) }})
+                </time>
+              </div>
+            </div>
+
+            <!-- Share Button -->
+            <button
+              type="button"
+              class="post-action-icon-btn"
+              title="Copy post link"
+              @click="copyPostLink"
+              aria-label="Copy link to post"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              </svg>
+            </button>
+          </header>
+
+          <!-- Headline / Topic if present -->
+          <h1 v-if="shouldShowHeadline(post)" class="focused-headline">
+            {{ post.title }}
+          </h1>
+
+          <!-- Post Content (Full, un-truncated) -->
+          <div class="focused-body">
+            <div class="post-text prose-content" v-html="renderedContent"></div>
+          </div>
+
+          <!-- Attached Image -->
+          <div
+            v-if="post.cover_image_url"
+            class="post-media-attachment"
+            @click="lightboxOpen = true"
+          >
+            <img :src="post.cover_image_url" :alt="post.title" class="attachment-img" />
+            <span class="media-zoom-hint">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                <line x1="11" y1="8" x2="11" y2="14"/>
+                <line x1="8" y1="11" x2="14" y2="11"/>
+              </svg>
+            </span>
+          </div>
+
+          <!-- Attached Audio / Voice Note -->
+          <div v-if="post.audio_url" class="post-audio-attachment">
+            <AudioPlayer :src="post.audio_url" :title="post.title" />
+          </div>
+
+          <!-- Tags / Hashtags -->
+          <div v-if="post.tags && post.tags.length" class="post-tags-row">
+            <router-link
+              v-for="tag in post.tags"
+              :key="tag"
+              :to="{ path: '/blog', query: { tag } }"
+              class="post-tag-pill"
+            >
+              #{{ tag }}
+            </router-link>
+          </div>
+
+          <!-- Action bar -->
+          <footer class="post-footer">
+            <div class="footer-reactions-wrap">
+              <PostReactions :postId="post.id" postType="blog" :compact="true" />
+            </div>
+
+            <div class="footer-actions-wrap">
+              <button type="button" class="feed-action-btn" @click="sharePost">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                  <polyline points="16 6 12 2 8 6"/>
+                  <line x1="12" y1="2" x2="12" y2="15"/>
+                </svg>
+                <span>Share</span>
+              </button>
+            </div>
+          </footer>
+        </article>
+
+        <!-- Comments & Discussion (Always open in focused post view) -->
+        <section class="focused-comments-wrap">
+          <PostComments :postId="post.id" postType="blog" :postTitle="post.title" />
+        </section>
+      </template>
+    </div>
+
+    <!-- Toast Notification -->
+    <transition name="fade">
+      <div v-if="toastMessage" class="feed-toast" role="status">
+        {{ toastMessage }}
+      </div>
+    </transition>
+
+    <!-- Image Lightbox Modal -->
+    <transition name="fade">
+      <div
+        v-if="lightboxOpen && post?.cover_image_url"
+        class="lightbox-overlay"
+        @click="lightboxOpen = false"
+      >
+        <button type="button" class="lightbox-close" aria-label="Close image">✕</button>
+        <img :src="post.cover_image_url" :alt="post.title" class="lightbox-image" @click.stop />
+      </div>
+    </transition>
   </main>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import TopBar from '../components/TopBar.vue'
 import AudioPlayer from '../components/AudioPlayer.vue'
 import PostReactions from '../components/PostReactions.vue'
 import PostComments from '../components/PostComments.vue'
-import hljs from 'highlight.js/lib/core'
-import javascript from 'highlight.js/lib/languages/javascript'
-import typescript from 'highlight.js/lib/languages/typescript'
-import css from 'highlight.js/lib/languages/css'
-import xml from 'highlight.js/lib/languages/xml'
-import bash from 'highlight.js/lib/languages/bash'
-import json from 'highlight.js/lib/languages/json'
-import 'highlight.js/styles/github-dark.css'
 import {
   type BlogPost,
   displayDate,
   fetchPublishedPost,
-  fetchPublishedPosts,
-  postExcerpt,
-  readingMinutes,
-  updatedDate,
+  formatFullDate,
+  timeAgo,
 } from '../lib/blog'
-
-hljs.registerLanguage('javascript', javascript)
-hljs.registerLanguage('typescript', typescript)
-hljs.registerLanguage('css', css)
-hljs.registerLanguage('html', xml)
-hljs.registerLanguage('xml', xml)
-hljs.registerLanguage('bash', bash)
-hljs.registerLanguage('json', json)
-
-interface TocItem {
-  id: string
-  text: string
-  level: number
-}
 
 const route = useRoute()
 const post = ref<BlogPost | null>(null)
-const posts = ref<BlogPost[]>([])
 const loading = ref(true)
-const toc = ref<TocItem[]>([])
+const toastMessage = ref('')
+const lightboxOpen = ref(false)
 
-const currentIndex = computed(() => posts.value.findIndex((item) => item.id === post.value?.id))
-const previousPost = computed(() => currentIndex.value > 0 ? posts.value[currentIndex.value - 1] : null)
-const nextPost = computed(() => {
-  const index = currentIndex.value
-  return index >= 0 && index < posts.value.length - 1 ? posts.value[index + 1] : null
+const slugOrId = computed(() => {
+  const param = route.params.slug
+  return Array.isArray(param) ? param[0] : param
 })
-
-const relatedPosts = computed(() => {
-  if (!post.value) return []
-  const ownTags = new Set(post.value.tags ?? [])
-  return posts.value
-    .filter((item) => item.id !== post.value?.id)
-    .map((item) => ({
-      item,
-      score: (item.tags ?? []).filter((tag) => ownTags.has(tag)).length,
-    }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3)
-    .map(({ item }) => item)
-})
-
-const processedHtml = computed(() => enhancePostHtml(post.value?.content ?? ''))
 
 onMounted(loadPost)
-
-watch(
-  () => route.params.slug,
-  () => {
-    void loadPost()
-  }
-)
+watch(slugOrId, loadPost)
 
 async function loadPost() {
+  if (!slugOrId.value) return
   loading.value = true
-  const slug = route.params.slug as string
-  const [foundPost, allPosts] = await Promise.all([
-    fetchPublishedPost(slug),
-    fetchPublishedPosts(),
-  ])
-  post.value = foundPost
-  posts.value = allPosts
+  post.value = await fetchPublishedPost(slugOrId.value)
   loading.value = false
-  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-function enhancePostHtml(html: string) {
-  if (!html) {
-    toc.value = []
-    return ''
+function shouldShowHeadline(item: BlogPost): boolean {
+  if (!item.title) return false
+  const t = item.title.trim().toLowerCase()
+  if (t === 'untitled' || t.startsWith('post update') || t === 'blog post') return false
+  const raw = (item.content || '').replace(/<[^>]+>/g, '').trim().toLowerCase()
+  if (raw.startsWith(t.slice(0, 30))) return false
+  return true
+}
+
+const renderedContent = computed(() => {
+  if (!post.value?.content) return ''
+  const html = post.value.content
+  if (html.includes('<p>') || html.includes('<div>') || html.includes('<br>')) {
+    return highlightHashtags(html)
   }
+  return html
+    .split(/\n\s*\n/)
+    .map((p) => `<p>${highlightHashtags(escapeHtml(p.trim()))}</p>`)
+    .join('')
+})
 
-  const doc = new DOMParser().parseFromString(html, 'text/html')
-  const headings = Array.from(doc.body.querySelectorAll('h2, h3'))
-  const usedIds = new Map<string, number>()
-
-  toc.value = headings.map((heading) => {
-    const baseId = slugify(heading.textContent || 'section')
-    const count = usedIds.get(baseId) ?? 0
-    usedIds.set(baseId, count + 1)
-    const id = count > 0 ? `${baseId}-${count + 1}` : baseId
-    heading.id = id
-    return {
-      id,
-      text: heading.textContent || 'Section',
-      level: Number(heading.tagName.slice(1)),
-    }
-  })
-
-  Array.from(doc.body.querySelectorAll('pre')).forEach((pre, index) => {
-    const code = pre.querySelector('code')
-    const rawCode = code?.textContent ?? pre.textContent ?? ''
-    const className = code?.className ?? ''
-    const language = className.match(/language-([a-z0-9-]+)/i)?.[1] || 'text'
-    const highlighted = language !== 'text' && hljs.getLanguage(language)
-      ? hljs.highlight(rawCode, { language }).value
-      : hljs.highlightAuto(rawCode).value
-
-    const wrapper = doc.createElement('div')
-    wrapper.className = 'code-shell'
-    wrapper.innerHTML = `
-      <div class="code-topline">
-        <span>${escapeHtml(language)}</span>
-        <button type="button" data-copy-code="${index}" data-code="${encodeURIComponent(rawCode)}">Copy</button>
-      </div>
-      <pre><code class="hljs language-${escapeHtml(language)}">${highlighted}</code></pre>
-    `
-    pre.replaceWith(wrapper)
-  })
-
-  Array.from(doc.body.querySelectorAll('a')).forEach((link) => {
-    const href = link.getAttribute('href') ?? ''
-    if (href.startsWith('http')) {
-      link.setAttribute('target', '_blank')
-      link.setAttribute('rel', 'noopener noreferrer')
-    }
-  })
-
-  return doc.body.innerHTML
+function highlightHashtags(str: string): string {
+  return str.replace(/(^|\s)(#[a-zA-Z0-9_\u0080-\uffff]+)/g, '$1<span class="inline-hashtag">$2</span>')
 }
 
-async function handleContentClick(event: MouseEvent) {
-  const target = event.target as HTMLElement
-  const button = target.closest<HTMLButtonElement>('button[data-copy-code]')
-  if (!button) return
-  const code = decodeURIComponent(button.dataset.code ?? '')
-  await navigator.clipboard.writeText(code)
-  const originalText = button.textContent
-  button.textContent = 'Copied'
-  window.setTimeout(() => {
-    button.textContent = originalText
-  }, 1400)
-}
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '') || 'section'
-}
-
-function escapeHtml(value: string) {
-  return value
+function escapeHtml(str: string): string {
+  return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
 }
 
-function postUrl(item: BlogPost) {
-  return `/blog/${item.slug || item.id}`
+function showToast(msg: string) {
+  toastMessage.value = msg
+  setTimeout(() => {
+    toastMessage.value = ''
+  }, 2600)
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+async function copyPostLink() {
+  const url = window.location.href
+  try {
+    await navigator.clipboard.writeText(url)
+    showToast('Post link copied to clipboard!')
+  } catch {
+    showToast(`Link: ${url}`)
+  }
+}
+
+async function sharePost() {
+  const url = window.location.href
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: post.value?.title || 'Post by Olimjon Makhmudov',
+        text: post.value?.content?.slice(0, 100) || '',
+        url,
+      })
+      return
+    } catch {
+      // fallback
+    }
+  }
+  await copyPostLink()
 }
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
-.blog-post-page {
+.focused-post-page {
   min-height: 100vh;
-  background: #ffffff;
-  color: #111827;
-  font-family: 'Inter', sans-serif;
-  padding: 108px 24px 90px;
+  background: #f8fafc;
+  color: #1e293b;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  padding-bottom: 80px;
 }
 
-.post-hero,
-.cover-wrap,
-.reader-shell,
-.related-section,
-.post-nav {
-  max-width: 1120px;
+.focused-container {
+  max-width: 680px;
   margin: 0 auto;
-}
-
-.post-hero {
-  display: grid;
-  gap: 18px;
-}
-
-.back-link {
-  justify-self: start;
-  color: #6c63ff;
-  background: rgba(108, 99, 255, 0.06);
-  border: 1px solid rgba(108, 99, 255, 0.2);
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-size: 14px;
-  font-weight: 800;
-  text-decoration: none;
-}
-
-.hero-meta {
+  padding: 100px 16px 40px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px 16px;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 700;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.post-hero h1 {
-  max-width: 880px;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(36px, 7vw, 72px);
-  line-height: 1.02;
-  letter-spacing: 0;
-  margin: 0;
+/* ── Back Navigation ────────────────────────────────────── */
+.back-nav {
+  margin-bottom: 4px;
 }
 
-.post-excerpt {
-  max-width: 760px;
-  color: #64748b;
-  font-size: 19px;
-  line-height: 1.8;
-  margin: 0;
-}
-
-.tag-row {
-  display: flex;
-  flex-wrap: wrap;
+.back-feed-link {
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
+  color: #6c63ff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(108, 99, 255, 0.08);
+  transition: all 0.15s ease;
 }
 
-.tag-row span {
+.back-feed-link:hover {
+  background: rgba(108, 99, 255, 0.15);
+  transform: translateX(-2px);
+}
+
+/* ── Focused Post Card ──────────────────────────────────── */
+.focused-post-card {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(108, 99, 255, 0.05);
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.post-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.post-author-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #6c63ff;
+}
+
+.post-author-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.author-name-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.author-name {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.verified-icon {
+  color: #6c63ff;
+  display: inline-flex;
+}
+
+.author-handle {
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.post-timestamp {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.post-action-icon-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.15s ease;
+}
+
+.post-action-icon-btn:hover {
   color: #6c63ff;
   background: rgba(108, 99, 255, 0.08);
-  border: 1px solid rgba(108, 99, 255, 0.16);
-  border-radius: 999px;
-  padding: 5px 10px;
-  font-size: 12px;
-  font-weight: 800;
 }
 
-.cover-wrap {
-  margin-top: 38px;
-  border-radius: 8px;
+/* ── Post Headline ──────────────────────────────────────── */
+.focused-headline {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+  margin: 0 0 14px;
+}
+
+/* ── Body ───────────────────────────────────────────────── */
+.focused-body {
+  margin-bottom: 16px;
+}
+
+.post-text {
+  font-size: 1.02rem;
+  line-height: 1.68;
+  color: #1e293b;
+  word-break: break-word;
+}
+
+.post-text :deep(p) {
+  margin: 0 0 12px;
+}
+
+.post-text :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.post-text :deep(a) {
+  color: #6c63ff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.post-text :deep(code) {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.88em;
+  color: #6c63ff;
+}
+
+.post-text :deep(.inline-hashtag) {
+  color: #6c63ff;
+  font-weight: 600;
+}
+
+/* ── Media ──────────────────────────────────────────────── */
+.post-media-attachment {
+  position: relative;
+  border-radius: 14px;
   overflow: hidden;
-  aspect-ratio: 16 / 7;
-  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+  background: #0f172a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.cover-wrap img {
+.attachment-img {
   width: 100%;
-  height: 100%;
+  height: auto;
+  max-height: 520px;
   object-fit: cover;
   display: block;
 }
 
-.audio-container {
-  grid-column: 1 / -1;
-  max-width: 760px;
-  width: 100%;
-  margin: 0;
-  justify-self: end;
-}
-
-.reader-shell {
+.media-zoom-hint {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.6);
+  color: #ffffff;
   display: grid;
-  grid-template-columns: 230px minmax(0, 760px);
-  gap: 56px;
-  align-items: start;
-  padding-top: 54px;
+  place-items: center;
+  backdrop-filter: blur(4px);
 }
 
-.toc {
-  position: sticky;
-  top: 92px;
-  display: grid;
-  gap: 8px;
-  border-left: 2px solid rgba(108, 99, 255, 0.16);
-  padding-left: 18px;
+.post-audio-attachment {
+  margin-bottom: 16px;
 }
 
-.toc p {
-  margin: 0 0 8px;
-  color: #111827;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.post-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
 }
 
-.toc a {
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.45;
-  text-decoration: none;
-}
-
-.toc a:hover {
-  color: #6c63ff;
-}
-
-.toc-level-3 {
-  padding-left: 14px;
-}
-
-.article-main-col {
-  min-width: 0;
-}
-
-.prose {
-  min-width: 0;
-}
-
-.prose :deep(h1),
-.prose :deep(h2),
-.prose :deep(h3) {
-  font-family: 'Space Grotesk', sans-serif;
-  color: #111827;
-  letter-spacing: 0;
-}
-
-.prose :deep(h2) {
-  font-size: 32px;
-  margin: 44px 0 16px;
-}
-
-.prose :deep(h3) {
-  font-size: 23px;
-  margin: 34px 0 12px;
-}
-
-.prose :deep(p),
-.prose :deep(li) {
-  color: #374151;
-  font-size: 18px;
-  line-height: 1.9;
-}
-
-.prose :deep(p) {
-  margin: 0 0 22px;
-}
-
-.prose :deep(ul),
-.prose :deep(ol) {
-  padding-left: 1.5rem;
-  margin: 0 0 24px;
-}
-
-.prose :deep(blockquote) {
-  margin: 28px 0;
-  padding: 18px 22px;
-  color: #475569;
-  border-left: 4px solid #6c63ff;
+.post-tag-pill {
   background: rgba(108, 99, 255, 0.06);
-  border-radius: 0 8px 8px 0;
-}
-
-.prose :deep(a) {
+  border: 1px solid rgba(108, 99, 255, 0.15);
   color: #6c63ff;
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
 }
 
-.prose :deep(img) {
-  width: 100%;
-  border-radius: 8px;
-  margin: 32px 0;
+.post-tag-pill:hover {
+  background: #6c63ff;
+  color: #ffffff;
 }
 
-.prose :deep(code:not(pre code)) {
-  color: #6c63ff;
-  background: #f1f5f9;
-  border-radius: 5px;
-  padding: 2px 6px;
-  font-size: 0.9em;
-}
-
-.prose :deep(.code-shell) {
-  overflow: hidden;
-  border-radius: 8px;
-  background: #0f172a;
-  margin: 30px 0;
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
-}
-
-.prose :deep(.code-topline) {
+/* ── Footer ─────────────────────────────────────────────── */
+.post-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 10px 14px;
-  color: #cbd5e1;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 12px;
-  font-weight: 800;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 14px;
+  margin-top: 8px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.prose :deep(.code-topline button) {
-  color: #ffffff;
-  background: rgba(108, 99, 255, 0.85);
-  border: 0;
+.footer-reactions-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.footer-actions-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feed-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.feed-action-btn:hover {
+  background: #f8fafc;
+  color: #6c63ff;
+  border-color: rgba(108, 99, 255, 0.25);
+}
+
+/* ── Focused Comments ───────────────────────────────────── */
+.focused-comments-wrap {
+  margin-top: 8px;
+}
+
+/* ── Skeleton ───────────────────────────────────────────── */
+.skeleton-focused-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.skeleton-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.skeleton-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  animation: pulse 1.5s infinite;
+}
+
+.skeleton-user-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeleton-line {
+  height: 12px;
+  background: #e2e8f0;
   border-radius: 6px;
-  padding: 6px 10px;
-  font: inherit;
+  animation: pulse 1.5s infinite;
+}
+
+.skeleton-line.w25 { width: 25%; }
+.skeleton-line.w40 { width: 40%; }
+.skeleton-line.w60 { width: 60%; }
+.skeleton-line.w80 { width: 80%; }
+.skeleton-line.w90 { width: 90%; }
+
+.skeleton-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-media {
+  height: 220px;
+  border-radius: 12px;
+  background: #e2e8f0;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+}
+
+/* ── Empty ──────────────────────────────────────────────── */
+.empty-focused-card {
+  text-align: center;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 20px;
+  padding: 56px 24px;
+}
+
+.empty-icon {
+  font-size: 2.6rem;
+  margin-bottom: 12px;
+}
+
+.empty-focused-card h2 {
+  font-size: 1.3rem;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.empty-focused-card p {
+  color: #64748b;
+  font-size: 0.95rem;
+  margin-bottom: 20px;
+}
+
+.return-feed-btn {
+  display: inline-block;
+  background: #6c63ff;
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 9px 22px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* ── Toast ──────────────────────────────────────────────── */
+.feed-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+/* ── Lightbox Overlay ───────────────────────────────────── */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+  z-index: 1050;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #ffffff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.2rem;
   cursor: pointer;
 }
 
-.prose :deep(pre) {
-  margin: 0;
-  padding: 20px;
-  overflow-x: auto;
+.lightbox-image {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
 }
 
-.prose :deep(pre code) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 14px;
-  line-height: 1.7;
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
 }
-
-.related-section {
-  margin-top: 74px;
-}
-
-.section-head span {
-  color: #6c63ff;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.section-head h2 {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 34px;
-  margin: 6px 0 22px;
-}
-
-.related-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.related-card,
-.nav-card {
-  display: grid;
-  gap: 10px;
-  color: inherit;
-  text-decoration: none;
-  border: 1px solid rgba(108, 99, 255, 0.14);
-  border-radius: 8px;
-  padding: 20px;
-  transition: transform 0.2s ease, border-color 0.2s ease;
-}
-
-.related-card:hover,
-.nav-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(108, 99, 255, 0.36);
-}
-
-.related-card span,
-.nav-card span {
-  color: #6c63ff;
-  font-size: 12px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.related-card h3 {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 20px;
-  margin: 0;
-}
-
-.related-card p {
-  color: #64748b;
-  line-height: 1.7;
-  margin: 0;
-}
-
-.post-nav {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-  margin-top: 36px;
-}
-
-.align-right {
-  text-align: right;
-}
-
-.loading-state,
-.empty-state {
-  display: grid;
-  min-height: 55vh;
-  place-items: center;
-  text-align: center;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #6c63ff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@media (max-width: 980px) {
-  .reader-shell {
-    grid-template-columns: 1fr;
-    gap: 28px;
-  }
-
-  .toc {
-    position: static;
-  }
-
-  .related-grid {
-    grid-template-columns: 1fr;
-  }
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 @media (max-width: 640px) {
-  .blog-post-page {
-    padding: 86px 20px 60px;
+  .focused-container {
+    padding: 80px 12px 30px;
   }
-
-  .cover-wrap {
-    aspect-ratio: 16 / 10;
+  .focused-post-card {
+    padding: 18px;
   }
-
-  .post-nav {
-    grid-template-columns: 1fr;
+  .post-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .footer-actions-wrap {
+    justify-content: flex-end;
   }
 }
 </style>
