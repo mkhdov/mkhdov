@@ -5,27 +5,6 @@
     <div class="feed-container">
       <!-- Channel / Profile Card (Social Header) -->
       <section class="channel-card">
-        <div class="channel-top">
-          <div class="avatar-wrap">
-            <img src="/portrait.png" alt="Olimjon Makhmudov" class="channel-avatar" />
-            <span class="online-indicator" title="Active"></span>
-          </div>
-          <div class="channel-meta">
-            <div class="channel-name-row">
-              <h1 class="channel-name">Olimjon Makhmudov</h1>
-              <span class="verified-badge" title="Verified Creator">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.2 14.2l-3.5-3.5 1.41-1.41 2.09 2.09 5.69-5.69 1.41 1.41-7.1 7.1z"/>
-                </svg>
-              </span>
-            </div>
-            <p class="channel-handle">@mkhdov · Software Engineer</p>
-          </div>
-        </div>
-
-        <p class="channel-bio">
-          Quick thoughts, engineering logs, architecture ideas, and behind-the-scenes updates.
-        </p>
 
         <!-- Search & Filter Controls -->
         <div class="channel-filter-bar">
@@ -129,7 +108,7 @@
           <!-- Post Author Header -->
           <header class="post-header">
             <div class="post-header-left">
-              <img src="/portrait.png" alt="Olimjon Makhmudov" class="post-author-avatar" />
+              <img src="@/assets/mkhdov.png" alt="Olimjon Makhmudov" class="post-author-avatar" />
               <div class="post-author-meta">
                 <div class="author-name-line">
                   <span class="author-name">{{ post.author || 'Olimjon Makhmudov' }}</span>
