@@ -108,7 +108,7 @@
           <!-- Post Author Header -->
           <header class="post-header">
             <div class="post-header-left">
-              <img src="@/assets/mkhdov.png" alt="Olimjon Makhmudov" class="post-author-avatar" />
+              <img src="../assets/mkhdov.png" alt="Olimjon Makhmudov" class="post-author-avatar" />
               <div class="post-author-meta">
                 <div class="author-name-line">
                   <span class="author-name">{{ post.author || 'Olimjon Makhmudov' }}</span>
