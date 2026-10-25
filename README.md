@@ -68,20 +68,20 @@ A calendar backend built with **Spring Boot**, designed to serve multiple client
 ## 📈 Activity
 
 <p align="center">
-  <img src="https://ghchart.rshah.org/39d353/mkhdov" alt="Contribution heatmap" width="100%" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mkhdov/mkhdov/output/github-snake-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/mkhdov/mkhdov/output/github-snake.svg" />
+    <img alt="Contribution graph" src="https://raw.githubusercontent.com/mkhdov/mkhdov/output/github-snake-dark.svg" width="100%" />
+  </picture>
 </p>
 
 <p align="center">
-  <img height="170" src="https://streak-stats.demolab.com/?user=mkhdov&theme=tokyonight&hide_border=true&border_radius=12" alt="GitHub streak" />
+  <img height="170" src="https://streak-stats.demolab.com/?user=mkhdov&background=0D1117&border=30363D&stroke=30363D&ring=39D353&fire=39D353&currStreakNum=C9D1D9&sideNums=C9D1D9&currStreakLabel=39D353&sideLabels=8B949E&dates=8B949E&border_radius=12" alt="GitHub streak" />
 </p>
 
 <p align="center">
-  <img height="175" src="https://github-readme-stats.vercel.app/api?username=mkhdov&show_icons=true&theme=tokyonight&hide_border=true&border_radius=12&rank_icon=github" alt="GitHub stats" />
-  <img height="175" src="https://github-readme-stats.vercel.app/api/top-langs/?username=mkhdov&layout=compact&theme=tokyonight&hide_border=true&border_radius=12" alt="Top languages" />
-</p>
-
-<p align="center">
-  <img src="https://github-readme-activity-graph.vercel.app/graph?username=mkhdov&theme=tokyo-night&hide_border=true&area=true&bg_color=0d1117" alt="Activity graph" width="100%" />
+  <img height="175" src="https://github-readme-stats.vercel.app/api?username=mkhdov&show_icons=true&rank_icon=github&icon_color=39d353&ring_color=39d353&border_color=30363d&bg_color=0d1117&title_color=39d353&text_color=c9d1d9&border_radius=12" alt="GitHub stats" />
+  <img height="175" src="https://github-readme-stats.vercel.app/api/top-langs/?username=mkhdov&layout=compact&border_color=30363d&bg_color=0d1117&title_color=39d353&text_color=c9d1d9&border_radius=12" alt="Top languages" />
 </p>
 
 ## 🎯 Currently focused on
